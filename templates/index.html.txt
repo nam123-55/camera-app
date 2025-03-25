@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera App</title>
+</head>
+<body>
+    <h1>Chụp ảnh kèm thời gian thực</h1>
+    <button onclick="capturePhoto()">Chụp Ảnh</button>
+    <p id="timestamp"></p>
+
+    <script>
+        async function capturePhoto() {
+            let response = await fetch('/capture', { method: 'POST' });
+            let data = await response.json();
+            document.getElementById("timestamp").innerText = "Thời gian: " + data.timestamp;
+        }
+    </script>
+</body>
+</html>

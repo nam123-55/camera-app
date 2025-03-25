@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera App</title>
+</head>
+<body>
+    <h1>Chụp ảnh kèm thời gian và vị trí</h1>
+
+    <!-- Khu vực hiển thị video từ camera -->
+    <video id="video" autoplay></video>
+
+    <!-- Nút chụp ảnh -->
+    <button id="capture">Chụp ảnh</button>
+
+    <!-- Khu vực hiển thị ảnh sau khi chụp -->
+    <canvas id="canvas"></canvas>
+
+    <!-- Hiển thị vị trí GPS -->
+    <p id="location"></p>
+    
+    <script>
+        // Bật camera
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            document.getElementById("video").srcObject = stream;
+        });
+
+        // Chụp ảnh
+        document.getElementById("capture").addEventListener("click", () => {
+            let canvas = document.getElementById("canvas");
+            let video = document.getElementById("video");
+
+            // Cài đặt kích thước ảnh khớp với video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            let ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Thêm thời gian thực lên ảnh
+            let now = new Date().toLocaleString();
+            ctx.fillStyle = "red";
+            ctx.font = "30px Arial";
+            ctx.fillText(now, 20, 50);
+
+            // Lấy vị trí GPS
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    let lat = position.coords.latitude.toFixed(6);
+                    let lon = position.coords.longitude.toFixed(6);
+                    document.getElementById("location").innerText = `Vị trí: ${lat}, ${lon}`;
+                    ctx.fillText(`Lat: ${lat}, Lon: ${lon}`, 20, 90);
+                });
+            } else {
+                alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+            }
+        });
+    </script>
+</body>
+</html>
