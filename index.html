@@ -85,12 +85,12 @@
 
         async function getServerTime() {
             try {
-                const response = await fetch("http://worldtimeapi.org/api/timezone/Asia/Ho_Chi_Minh");
+                const response = await fetch("https://worldtimeapi.org/api/ip");
                 const data = await response.json();
                 return new Date(data.utc_datetime).toLocaleString('vi-VN');
             } catch (error) {
                 console.error("Lỗi lấy thời gian từ server:", error);
-                return "Không thể lấy thời gian";
+                return null;
             }
         }
 
@@ -114,22 +114,26 @@
 
         startCamera();
 
-        captureButton.addEventListener('click', () => {
-            getServerTime().then(timeString => {
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-                ctx.fillRect(10, canvas.height - 90, 620, 80);
-                ctx.fillStyle = "white";
-                ctx.font = "20px Arial";
-                ctx.fillText(timeString, 20, canvas.height - 60);
-                ctx.fillText(locationText, 20, canvas.height - 30);
-                canvas.style.display = "block";
-                const image = canvas.toDataURL("image/png");
-                const link = document.createElement('a');
-                link.href = image;
-                link.download = 'captured_image.png';
-                link.click();
-            });
+        captureButton.addEventListener('click', async () => {
+            const timeString = await getServerTime();
+            if (!timeString) {
+                alert("Không thể lấy thời gian từ máy chủ! Kiểm tra kết nối mạng.");
+                return;
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            ctx.fillRect(10, canvas.height - 90, 620, 80);
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText(timeString, 20, canvas.height - 60);
+            ctx.fillText(locationText, 20, canvas.height - 30);
+            canvas.style.display = "block";
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = 'captured_image.png';
+            link.click();
         });
     </script>
 </body>
