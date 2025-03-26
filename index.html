@@ -3,58 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera App</title>
+    <title>SPECTRUM CAMERA</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        video {
+            display: block;
+            margin: 0 auto;
+            border: 2px solid black;
+            background: black;
+        }
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        canvas {
+            display: none;
+        }
+        #error-message {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Chụp ảnh kèm thời gian và vị trí</h1>
 
-    <!-- Khu vực hiển thị video từ camera -->
-    <video id="video" autoplay></video>
+    <h1>SPECTRUM CAMERA</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <p id="error-message"></p>
+    <button id="capture">📸 Chụp Ảnh</button>
+    <canvas id="canvas" width="640" height="480"></canvas>
 
-    <!-- Nút chụp ảnh -->
-    <button id="capture">Chụp ảnh</button>
-
-    <!-- Khu vực hiển thị ảnh sau khi chụp -->
-    <canvas id="canvas"></canvas>
-
-    <!-- Hiển thị vị trí GPS -->
-    <p id="location"></p>
-    
     <script>
-        // Bật camera
-        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-            document.getElementById("video").srcObject = stream;
-        });
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const captureButton = document.getElementById('capture');
+        const errorMessage = document.getElementById('error-message');
 
-        // Chụp ảnh
-        document.getElementById("capture").addEventListener("click", () => {
-            let canvas = document.getElementById("canvas");
-            let video = document.getElementById("video");
+        let locationText = "Đang lấy vị trí...";
 
-            // Cài đặt kích thước ảnh khớp với video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+        // Lấy vị trí GPS và chuyển thành địa chỉ
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const lat = position.coords.latitude.toFixed(6);
+                        const lon = position.coords.longitude.toFixed(6);
 
-            let ctx = canvas.getContext("2d");
+                        // Gửi request đến OpenStreetMap để lấy địa chỉ
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.display_name) {
+                                    locationText = data.display_name;
+                                } else {
+                                    locationText = `📍 ${lat}, ${lon}`;
+                                }
+                            })
+                            .catch(() => {
+                                locationText = `📍 ${lat}, ${lon}`;
+                            });
+                    },
+                    error => {
+                        console.error("Lỗi định vị:", error);
+                        locationText = "Không lấy được vị trí";
+                    }
+                );
+            } else {
+                locationText = "Trình duyệt không hỗ trợ GPS";
+            }
+        }
+
+        getLocation(); // Gọi khi tải trang
+
+        // Mở webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { 
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Lỗi camera:", error);
+                errorMessage.textContent = "❌ Không thể truy cập camera. Hãy cấp quyền!";
+            });
+
+        captureButton.addEventListener('click', () => {
+            // Vẽ hình ảnh từ video lên canvas
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Thêm thời gian thực lên ảnh
-            let now = new Date().toLocaleString();
-            ctx.fillStyle = "red";
-            ctx.font = "30px Arial";
-            ctx.fillText(now, 20, 50);
+            // Lấy ngày giờ hiện tại
+            const now = new Date();
+            const timeString = now.toLocaleString('vi-VN');
 
-            // Lấy vị trí GPS
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    let lat = position.coords.latitude.toFixed(6);
-                    let lon = position.coords.longitude.toFixed(6);
-                    document.getElementById("location").innerText = `Vị trí: ${lat}, ${lon}`;
-                    ctx.fillText(`Lat: ${lat}, Lon: ${lon}`, 20, 90);
-                });
-            } else {
-                alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
-            }
+            // Vẽ nền đen trong suốt cho chữ
+            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            ctx.fillRect(10, canvas.height - 90, 620, 80);
+
+            // Vẽ ngày giờ
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText(timeString, 20, canvas.height - 60);
+
+            // Vẽ địa chỉ GPS
+            ctx.fillText(locationText, 20, canvas.height - 30);
+
+            // Hiển thị canvas
+            canvas.style.display = "block";
+
+            // Tạo ảnh từ canvas
+            const image = canvas.toDataURL("image/png");
+
+            // Tải ảnh xuống
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = 'captured_image.png';
+            link.click();
         });
     </script>
 </body>
